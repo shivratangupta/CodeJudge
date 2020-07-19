@@ -1,4 +1,11 @@
 package com.codejudge.onlinejudge.repository;
 
-public class UserRepository {
+import com.codejudge.onlinejudge.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    User findByEmail(String email);
 }
