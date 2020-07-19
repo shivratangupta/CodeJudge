@@ -23,12 +23,12 @@ public abstract class Auditable implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private Date createdAt;
+    private Date createdAt = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
     @LastModifiedDate
     @Column(nullable = false)
-    private Date updatedAt;
+    private Date updatedAt = new Date();
 
     @Override
     public boolean equals(Object obj) {

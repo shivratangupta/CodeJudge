@@ -6,6 +6,7 @@ import lombok.Setter;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -15,7 +16,7 @@ import java.util.Set;
 public class User extends Auditable {
 
     @NotBlank
-    private String name;
+    private String fullName;
 
     @NotBlank
     @Column(unique = true)
@@ -25,8 +26,8 @@ public class User extends Auditable {
     @Size(min = 6)
     private String saltedHashedPassword;
 
-    private boolean isActive;
+    private boolean active;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    private Set<Role> roles;
+    private Set<Role> roles = new HashSet<>();
 }

@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -19,5 +20,5 @@ public class Permission extends Auditable {
     private String name;
 
     @ManyToMany(mappedBy = "permissions")
-    private Set<Role> roles;
+    private Set<Role> roles = new HashSet<>();
 }
