@@ -1,5 +1,6 @@
 package com.codejudge.onlinejudge.dto;
 
+import com.codejudge.onlinejudge.validation.ValidEmail;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,7 @@ public class UserDto {
     private String fullName;
 
     // TODO: Implement custom validators
+    @ValidEmail
     @NotBlank
     private String email;
 
