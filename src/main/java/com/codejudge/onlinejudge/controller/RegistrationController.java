@@ -7,9 +7,7 @@ import com.codejudge.onlinejudge.model.User;
 import com.codejudge.onlinejudge.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class RegistrationController {
@@ -21,6 +19,15 @@ public class RegistrationController {
     public ResponseDto<UserResponseDto> registerUser(@RequestBody UserDto userDto) {
 
         User user = userService.registerUser(userDto);
+        return new ResponseDto<>(
+                new UserResponseDto(user.getId(), user.getFullName(), user.getEmail(), user.isActive()),
+                HttpStatus.OK);
+    }
+
+    @GetMapping("/user/verify")
+    public ResponseDto<UserResponseDto> verifyUser(@RequestParam String token) {
+
+        User user = userService.verifyUser(token);
         return new ResponseDto<>(
                 new UserResponseDto(user.getId(), user.getFullName(), user.getEmail(), user.isActive()),
                 HttpStatus.OK);

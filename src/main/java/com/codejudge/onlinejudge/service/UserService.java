@@ -6,4 +6,6 @@ import com.codejudge.onlinejudge.model.User;
 public interface UserService {
 
     User registerUser(UserDto userDto);
+
+    User verifyUser(String token);
 }
