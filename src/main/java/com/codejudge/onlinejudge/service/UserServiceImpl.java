@@ -70,4 +70,24 @@ public class UserServiceImpl implements UserService {
             return null;
         }
     }
+
+    @Override
+    public User resendVerificationToken(String email) {
+
+        User user = userRepository.findByEmail(email);
+        if(user == null) {
+            // TODO: Throw an exception
+        }
+
+        VerificationToken token = verificationTokenRepository.findBYUser(user);
+        if(token == null) {
+            token = new VerificationToken(user);
+            verificationTokenRepository.save(token);
+        } else {
+            token.updateToken();
+        }
+
+        // TODO: Send an email
+        return user;
+    }
 }

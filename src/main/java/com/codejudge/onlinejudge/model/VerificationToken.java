@@ -40,7 +40,7 @@ public class VerificationToken extends Auditable {
         this.expiryTime = calculateExpiryTime();
     }
 
-    private void updateToken() {
+    public void updateToken() {
         this.token = generateRandomUniqueToken();
         this.expiryTime = calculateExpiryTime();
     }

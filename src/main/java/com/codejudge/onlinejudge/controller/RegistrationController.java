@@ -32,4 +32,13 @@ public class RegistrationController {
                 new UserResponseDto(user.getId(), user.getFullName(), user.getEmail(), user.isActive()),
                 HttpStatus.OK);
     }
+
+    @GetMapping("/user/resendVerificationToken")
+    public ResponseDto<UserResponseDto> resendVerificationToken(@RequestParam String email) {
+
+        User user = userService.resendVerificationToken(email);
+        return new ResponseDto<>(
+                new UserResponseDto(user.getId(), user.getFullName(), user.getEmail(), user.isActive()),
+                HttpStatus.OK);
+    }
 }

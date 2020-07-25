@@ -8,4 +8,6 @@ public interface UserService {
     User registerUser(UserDto userDto);
 
     User verifyUser(String token);
+
+    User resendVerificationToken(String email);
 }
