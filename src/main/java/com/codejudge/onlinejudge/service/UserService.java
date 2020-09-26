@@ -9,5 +9,11 @@ public interface UserService {
 
     User verifyUser(String token);
 
-    User resendVerificationToken(String email);
+    void resendVerificationToken(String email);
+
+    void resetPassword(String email);
+
+    void verifyPasswordToken(String token);
+
+    User updatePassword(String newPassword);
 }

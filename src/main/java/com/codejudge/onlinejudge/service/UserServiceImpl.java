@@ -37,10 +37,11 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = new User();
-        user.setFullName(userDto.getFullName());
+        user.setFirstName(userDto.getFirstName());
+        user.setLastName(userDto.getLastName());
         user.setEmail(userDto.getEmail());
         user.setActive(false);
-        user.setSaltedHashedPassword(passwordEncoder.encode(userDto.getSaltedHashedPassword()));
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
         User savedUser = userRepository.save(user);
 
@@ -53,41 +54,56 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User verifyUser(String token) {
-
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
-
-        if(verificationToken == null)
+        if(!validateToken(verificationToken))
             return null;
 
-        if(verificationToken.getExpiryTime().getTime() - new Date().getTime() > 0) {
+        User verifiedUser = verificationToken.getUser();
+        verifiedUser.setActive(true);
+        userRepository.save(verifiedUser);
 
-            User verifiedUser = verificationToken.getUser();
-            verifiedUser.setActive(true);
-            userRepository.save(verifiedUser);
-
-            return verifiedUser;
-        } else {
-            return null;
-        }
+        return verifiedUser;
     }
 
     @Override
-    public User resendVerificationToken(String email) {
-
+    public void resendVerificationToken(String email) {
         User user = userRepository.findByEmail(email);
         if(user == null) {
             // TODO: Throw an exception
         }
 
-        VerificationToken token = verificationTokenRepository.findBYUser(user);
-        if(token == null) {
-            token = new VerificationToken(user);
-            verificationTokenRepository.save(token);
+        VerificationToken verificationToken = verificationTokenRepository.findByUser(user);
+        if(verificationToken == null) {
+            verificationToken = new VerificationToken(user);
+            verificationTokenRepository.save(verificationToken);
         } else {
-            token.updateToken();
+            verificationToken.updateToken();
         }
 
         // TODO: Send an email
-        return user;
+    }
+
+    @Override
+    public void resetPassword(String email) {
+        resendVerificationToken(email);
+    }
+
+    @Override
+    public void verifyPasswordToken(String token) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
+        if(!validateToken(verificationToken))
+            // TODO: Throw an exception
+    }
+
+    @Override
+    public User updatePassword(String newPassword) {
+
+    }
+
+    private boolean validateToken(VerificationToken verificationToken) {
+        if(verificationToken == null || verificationToken.getExpiryTime().getTime() - new Date().getTime() <= 0)
+            return false;
+
+        return true;
     }
 }

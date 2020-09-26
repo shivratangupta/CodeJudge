@@ -9,15 +9,18 @@ public class UserResponseDto {
 
     private Long id;
 
-    private String fullName;
+    private String firstName;
+
+    private String lastName;
 
     private String email;
 
     private boolean active;
 
-    public UserResponseDto(Long id, String fullName, String email, boolean active) {
+    public UserResponseDto(Long id, String firstName, String lastName, String email, boolean active) {
         this.id = id;
-        this.fullName = fullName;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
         this.active = active;
     }

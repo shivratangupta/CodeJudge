@@ -16,7 +16,10 @@ import java.util.Set;
 public class User extends Auditable {
 
     @NotBlank
-    private String fullName;
+    private String firstName;
+
+    @NotBlank
+    private String lastName;
 
     @NotBlank
     @Column(unique = true)
@@ -24,7 +27,9 @@ public class User extends Auditable {
 
     @NotBlank
     @Size(min = 6)
-    private String saltedHashedPassword;
+    private String password;
+    private String confirmPassword;
+
 
     private boolean active;
 
