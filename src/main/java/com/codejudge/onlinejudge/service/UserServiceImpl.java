@@ -2,10 +2,12 @@ package com.codejudge.onlinejudge.service;
 
 import com.codejudge.onlinejudge.dto.UserDto;
 import com.codejudge.onlinejudge.event.SuccessfulRegistrationEvent;
+import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
 import com.codejudge.onlinejudge.model.User;
 import com.codejudge.onlinejudge.model.VerificationToken;
 import com.codejudge.onlinejudge.repository.UserRepository;
 import com.codejudge.onlinejudge.repository.VerificationTokenRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.Date;
 
+@Slf4j
 @Service
 @Transactional
 public class UserServiceImpl implements UserService {
@@ -31,11 +34,14 @@ public class UserServiceImpl implements UserService {
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     @Override
-    public User registerUser(UserDto userDto) {
+    public User registerUser(UserDto userDto) throws UserAlreadyExistException {
         if(userRepository.findByEmail(userDto.getEmail()) != null) {
-            // TODO: Throw an exception
+            log.info("Registration Request failed because account is already exist with email address: " + userDto.getEmail());
+            throw new UserAlreadyExistException("There is an account with that email address: "
+            + userDto.getEmail());
         }
 
+        log.info("Creating new user with email address: " + userDto.getEmail());
         User user = new User();
         user.setFirstName(userDto.getFirstName());
         user.setLastName(userDto.getLastName());
@@ -43,7 +49,9 @@ public class UserServiceImpl implements UserService {
         user.setActive(false);
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
+        log.info("Saving new user into database");
         User savedUser = userRepository.save(user);
+        log.info("Saved new user into database");
 
         applicationEventPublisher.publishEvent(
                 new SuccessfulRegistrationEvent(savedUser)

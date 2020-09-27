@@ -2,7 +2,8 @@ package com.codejudge.onlinejudge.exception;
 
 import javax.validation.constraints.NotBlank;
 
-public class UserAlreadyExistException extends Throwable {
-    public UserAlreadyExistException(@NotBlank String s) {
+public class UserAlreadyExistException extends Exception {
+    public UserAlreadyExistException(@NotBlank String message) {
+        super(message);
     }
 }
