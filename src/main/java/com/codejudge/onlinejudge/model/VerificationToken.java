@@ -3,9 +3,7 @@ package com.codejudge.onlinejudge.model;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import java.util.Calendar;
 import java.util.Date;
@@ -17,12 +15,13 @@ import java.util.UUID;
 @Setter
 public class VerificationToken extends Auditable {
 
-    private static final int VALIDITY_TIME = 4 * 60;
+    private static final int VALIDITY_TIME = 24 * 60;
 
     @NotBlank
     private String token;
 
-    @OneToOne(targetEntity = User.class)
+    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false)
     private User user;
 
     private Date expiryTime;

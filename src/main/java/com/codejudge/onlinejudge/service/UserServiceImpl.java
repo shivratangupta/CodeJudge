@@ -2,6 +2,7 @@ package com.codejudge.onlinejudge.service;
 
 import com.codejudge.onlinejudge.dto.UserDto;
 import com.codejudge.onlinejudge.event.SuccessfulRegistrationEvent;
+import com.codejudge.onlinejudge.exception.InvalidVerificationTokenException;
 import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
 import com.codejudge.onlinejudge.model.User;
 import com.codejudge.onlinejudge.model.VerificationToken;
@@ -13,7 +14,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.WebRequest;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.util.Date;
 
@@ -23,18 +26,19 @@ import java.util.Date;
 public class UserServiceImpl implements UserService {
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    VerificationTokenRepository verificationTokenRepository;
+    private VerificationTokenRepository verificationTokenRepository;
 
     @Autowired
-    ApplicationEventPublisher applicationEventPublisher;
+    private ApplicationEventPublisher applicationEventPublisher;
 
-    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
-    public User registerUser(UserDto userDto) throws UserAlreadyExistException {
+    public User registerUser(UserDto userDto, HttpServletRequest request) throws UserAlreadyExistException {
         if(userRepository.findByEmail(userDto.getEmail()) != null) {
             log.info("Registration Request failed because account is already exist with email address: " + userDto.getEmail());
             throw new UserAlreadyExistException("There is an account with that email address: "
@@ -53,23 +57,36 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
         log.info("Saved new user into database");
 
-        applicationEventPublisher.publishEvent(
-                new SuccessfulRegistrationEvent(savedUser)
-        );
+        try {
+            applicationEventPublisher.publishEvent(
+                    new SuccessfulRegistrationEvent(savedUser, request.getLocale(), request.getContextPath())
+            );
+        } catch (RuntimeException ex) {
+            // TODO: throw an exception
+        }
 
+        log.info("registration request is successful");
         return savedUser;
     }
 
     @Override
-    public User verifyUser(String token) {
+    public User confirmRegistration(String token, WebRequest webRequest) throws InvalidVerificationTokenException {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
-        if(!validateToken(verificationToken))
-            return null;
+        if(verificationToken == null) {
+            log.info("Registration confirmation request is failed because token is invalid");
+            throw new InvalidVerificationTokenException("Token " + token + " is invalid.");
+        }
+
+        if(verificationToken.getExpiryTime().getTime() - new Date().getTime() <= 0) {
+            log.info("Registration confirmation request is failed because token has expired");
+            throw new InvalidVerificationTokenException("Token " + token + " has expired.");
+        }
 
         User verifiedUser = verificationToken.getUser();
         verifiedUser.setActive(true);
         userRepository.save(verifiedUser);
 
+        log.info("Registration confirmation request is successful");
         return verifiedUser;
     }
 
@@ -99,13 +116,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public void verifyPasswordToken(String token) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
-        if(!validateToken(verificationToken))
+        //if(!validateToken(verificationToken))
             // TODO: Throw an exception
     }
 
     @Override
     public User updatePassword(String newPassword) {
-
+        return null;
     }
 
     private boolean validateToken(VerificationToken verificationToken) {

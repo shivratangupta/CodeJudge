@@ -1,14 +1,18 @@
 package com.codejudge.onlinejudge.service;
 
 import com.codejudge.onlinejudge.dto.UserDto;
+import com.codejudge.onlinejudge.exception.InvalidVerificationTokenException;
 import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
 import com.codejudge.onlinejudge.model.User;
+import org.springframework.web.context.request.WebRequest;
+
+import javax.servlet.http.HttpServletRequest;
 
 public interface UserService {
 
-    User registerUser(UserDto userDto) throws UserAlreadyExistException;
+    User registerUser(UserDto userDto, HttpServletRequest request) throws UserAlreadyExistException;
 
-    User verifyUser(String token);
+    User confirmRegistration(String token, WebRequest webRequest) throws InvalidVerificationTokenException;
 
     void resendVerificationToken(String email);
 
