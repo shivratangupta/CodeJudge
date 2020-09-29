@@ -11,6 +11,9 @@ import com.codejudge.onlinejudge.repository.VerificationTokenRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private MessageSource messageSource;
+
+    @Autowired
+    private JavaMailSender javaMailSender;
 
     @Override
     public User registerUser(UserDto userDto, HttpServletRequest request) throws UserAlreadyExistException {
@@ -91,21 +100,28 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void resendVerificationToken(String email) {
-        User user = userRepository.findByEmail(email);
-        if(user == null) {
-            // TODO: Throw an exception
-        }
+    public void resendVerificationToken(String existingToken, HttpServletRequest request) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(existingToken);
+        verificationToken.updateToken();
+        log.info("Verification token expiry time is updated");
+        verificationTokenRepository.save(verificationToken);
+        log.info("Saving verification token in the database");
 
-        VerificationToken verificationToken = verificationTokenRepository.findByUser(user);
-        if(verificationToken == null) {
-            verificationToken = new VerificationToken(user);
-            verificationTokenRepository.save(verificationToken);
-        } else {
-            verificationToken.updateToken();
-        }
+        User user = verificationToken.getUser();
+        String appUrl = "http://" + request.getServerName() + ":" +
+                request.getServerPort() + request.getContextPath();
+        String confirmationUrl = appUrl + "/confirmRegistration.html?token=" +
+                verificationToken.getToken();
+        String message = messageSource.getMessage("message.resendToken",
+                null, request.getLocale());
 
-        // TODO: Send an email
+        SimpleMailMessage email = new SimpleMailMessage();
+        email.setSubject("Resend Registration Token");
+        email.setText(message + "\r\n" + confirmationUrl);
+        email.setFrom("support.email");
+        email.setTo(user.getEmail());
+        javaMailSender.send(email);
+        log.info("verification email sent to the user " + user.getEmail());
     }
 
     @Override

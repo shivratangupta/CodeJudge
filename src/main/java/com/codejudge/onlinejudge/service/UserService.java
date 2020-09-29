@@ -14,7 +14,7 @@ public interface UserService {
 
     User confirmRegistration(String token, WebRequest webRequest) throws InvalidVerificationTokenException;
 
-    void resendVerificationToken(String email);
+    void resendVerificationToken(String existingToken, HttpServletRequest request);
 
     void resetPassword(String email);
 

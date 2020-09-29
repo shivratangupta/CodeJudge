@@ -45,8 +45,12 @@ public class RegistrationController {
     }
 
     @PostMapping("/user/resendVerificationToken")
-    public void resendVerificationToken(@RequestParam String email) {
-        userService.resendVerificationToken(email);
+    public ResponseDto<String> resendVerificationToken(@RequestParam String existingToken,
+                                                       HttpServletRequest request) {
+        log.info("Received resend verification token request");
+        userService.resendVerificationToken(existingToken, request);
+        return new ResponseDto<>("New Verification email has been sent.",
+                HttpStatus.OK);
     }
     
     @PostMapping("/user/resetPassword")
