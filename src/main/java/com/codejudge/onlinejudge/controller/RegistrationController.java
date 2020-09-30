@@ -1,10 +1,12 @@
 package com.codejudge.onlinejudge.controller;
 
+import com.codejudge.onlinejudge.dto.PasswordDto;
 import com.codejudge.onlinejudge.dto.ResponseDto;
 import com.codejudge.onlinejudge.dto.UserDto;
 import com.codejudge.onlinejudge.dto.UserResponseDto;
-import com.codejudge.onlinejudge.exception.InvalidVerificationTokenException;
+import com.codejudge.onlinejudge.exception.InvalidTokenException;
 import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
+import com.codejudge.onlinejudge.exception.UserNotFoundException;
 import com.codejudge.onlinejudge.model.User;
 import com.codejudge.onlinejudge.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +38,7 @@ public class RegistrationController {
 
     @GetMapping("/confirmRegistration")
     public ResponseDto<UserResponseDto> confirmRegistration(@RequestParam String token,
-                                                            WebRequest webRequest) throws InvalidVerificationTokenException {
+                                                            WebRequest webRequest) throws InvalidTokenException {
         log.info("Received registration confirmation request");
         User user = userService.confirmRegistration(token, webRequest);
         return new ResponseDto<>(
@@ -54,18 +56,22 @@ public class RegistrationController {
     }
     
     @PostMapping("/user/resetPassword")
-    public void resetPassword(@RequestParam String email) {
-        userService.resetPassword(email);
+    public ResponseDto<String> resetPassword(@RequestParam String email,
+                                             HttpServletRequest request) throws UserNotFoundException {
+        log.info("Received reset password request for " + email);
+        userService.resetPassword(email, request);
+        return new ResponseDto<>("Reset password email has been sent.",
+                HttpStatus.OK);
     }
 
-    @GetMapping("/user/verifyPasswordToken")
-    public void verifyPasswordToken(@RequestParam String token) {
+    @GetMapping("/user/changePassword")
+    public void verifyPasswordToken(@RequestParam String token) throws InvalidTokenException {
         userService.verifyPasswordToken(token);
     }
 
-    @GetMapping("/user/updatePassword")
-    public ResponseDto<UserResponseDto> updatePassword(@RequestParam String newPassword) {
-        User user = userService.updatePassword(newPassword);
+    @PostMapping("/user/savePassword")
+    public ResponseDto<UserResponseDto> savePassword(@Valid @RequestBody PasswordDto passwordDto) throws InvalidTokenException {
+        User user = userService.savePassword(passwordDto);
         return new ResponseDto<>(
                 new UserResponseDto(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.isActive()),
                 HttpStatus.OK);

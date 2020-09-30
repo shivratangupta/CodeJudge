@@ -1,11 +1,15 @@
 package com.codejudge.onlinejudge.service;
 
+import com.codejudge.onlinejudge.dto.PasswordDto;
 import com.codejudge.onlinejudge.dto.UserDto;
 import com.codejudge.onlinejudge.event.SuccessfulRegistrationEvent;
-import com.codejudge.onlinejudge.exception.InvalidVerificationTokenException;
+import com.codejudge.onlinejudge.exception.InvalidTokenException;
 import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
+import com.codejudge.onlinejudge.exception.UserNotFoundException;
+import com.codejudge.onlinejudge.model.PasswordResetToken;
 import com.codejudge.onlinejudge.model.User;
 import com.codejudge.onlinejudge.model.VerificationToken;
+import com.codejudge.onlinejudge.repository.PasswordResetTokenRepository;
 import com.codejudge.onlinejudge.repository.UserRepository;
 import com.codejudge.onlinejudge.repository.VerificationTokenRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +18,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.WebRequest;
@@ -33,6 +36,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -79,16 +85,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User confirmRegistration(String token, WebRequest webRequest) throws InvalidVerificationTokenException {
+    public User confirmRegistration(String token, WebRequest webRequest) throws InvalidTokenException {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
         if(verificationToken == null) {
             log.info("Registration confirmation request is failed because token is invalid");
-            throw new InvalidVerificationTokenException("Token " + token + " is invalid.");
+            throw new InvalidTokenException("Verification token " + token + " is invalid.");
         }
 
         if(verificationToken.getExpiryTime().getTime() - new Date().getTime() <= 0) {
             log.info("Registration confirmation request is failed because token has expired");
-            throw new InvalidVerificationTokenException("Token " + token + " has expired.");
+            throw new InvalidTokenException("Verification token " + token + " has expired.");
         }
 
         User verifiedUser = verificationToken.getUser();
@@ -125,26 +131,58 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void resetPassword(String email) {
-        resendVerificationToken(email);
+    public void resetPassword(String email, HttpServletRequest request) throws UserNotFoundException {
+        User user = userRepository.findByEmail(email);
+        if(user == null) {
+            log.info("Reset password request is failed because user " + email + " is not found!");
+            throw new UserNotFoundException("user " + email + " not found!");
+        }
+
+        log.info("Creating new password reset token for user " + email);
+        PasswordResetToken passwordResetToken = new PasswordResetToken(user);
+        log.info("Saving password reset token to the database");
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        String subject = "Reset Password";
+        String confirmationUrl = request.getContextPath() + "/user/changePassword?token=" +
+                passwordResetToken.getToken();
+        String message = messageSource.getMessage("message.resetPassword",
+                null, request.getLocale());
+
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+        simpleMailMessage.setSubject(subject);
+        simpleMailMessage.setText(message + "\r\n" + confirmationUrl);
+        simpleMailMessage.setTo(email);
+        javaMailSender.send(simpleMailMessage);
+        log.info("Reset password email sent to the user " + email);
     }
 
     @Override
-    public void verifyPasswordToken(String token) {
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
-        //if(!validateToken(verificationToken))
-            // TODO: Throw an exception
+    public void verifyPasswordToken(String token) throws InvalidTokenException {
+        validatePasswordResetToken(token);
     }
 
     @Override
-    public User updatePassword(String newPassword) {
-        return null;
+    public User savePassword(PasswordDto passwordDto) throws InvalidTokenException {
+        PasswordResetToken passwordResetToken = validatePasswordResetToken(passwordDto.getToken());
+
+        User user = passwordResetToken.getUser();
+        user.setPassword(passwordEncoder.encode(passwordDto.getNewPassword()));
+        userRepository.save(user);
+
+        return user;
     }
 
-    private boolean validateToken(VerificationToken verificationToken) {
-        if(verificationToken == null || verificationToken.getExpiryTime().getTime() - new Date().getTime() <= 0)
-            return false;
+    private PasswordResetToken validatePasswordResetToken(String token) throws InvalidTokenException {
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(token);
+        if(passwordResetToken == null) {
+            throw new InvalidTokenException("Password reset token " + token + " is invalid");
+        }
 
-        return true;
+        if(passwordResetToken.getExpiryTime().getTime() - new Date().getTime() <= 0) {
+            throw new InvalidTokenException("Password reset token " + token + " has expired.");
+        }
+
+        return passwordResetToken;
     }
 }
