@@ -2,6 +2,7 @@ package com.codejudge.onlinejudge.dto;
 
 import com.codejudge.onlinejudge.validation.PasswordMatches;
 import com.codejudge.onlinejudge.validation.ValidEmail;
+import com.codejudge.onlinejudge.validation.ValidPassword;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,9 +24,8 @@ public class UserDto {
     @NotBlank
     private String email;
 
-    // TODO: Implement custom validators
+    @ValidPassword
     @NotBlank
-    @Size(min = 6)
     private String password;
     private String confirmPassword;
 }
