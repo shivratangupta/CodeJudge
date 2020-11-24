@@ -1,9 +1,7 @@
 package com.codejudge.onlinejudge.controller;
 
-import com.codejudge.onlinejudge.dto.PasswordDto;
-import com.codejudge.onlinejudge.dto.ResponseDto;
-import com.codejudge.onlinejudge.dto.UserDto;
-import com.codejudge.onlinejudge.dto.UserResponseDto;
+import com.codejudge.onlinejudge.dto.*;
+import com.codejudge.onlinejudge.exception.InvalidOldPasswordException;
 import com.codejudge.onlinejudge.exception.InvalidTokenException;
 import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
 import com.codejudge.onlinejudge.exception.UserNotFoundException;
@@ -12,6 +10,7 @@ import com.codejudge.onlinejudge.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 
@@ -74,6 +73,14 @@ public class RegistrationController {
         User user = userService.savePassword(passwordDto);
         return new ResponseDto<>(
                 new UserResponseDto(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.isActive()),
+                HttpStatus.OK);
+    }
+
+    @PostMapping("/user/updatePassword")
+    public ResponseDto<String> changeUserPassword(@Valid @RequestBody ChangePasswordDto changePasswordDto,
+                                                  Authentication authentication) throws InvalidOldPasswordException {
+        userService.changeUserPassword(changePasswordDto, authentication);
+        return new ResponseDto<>("Password has been updated successfully",
                 HttpStatus.OK);
     }
 }

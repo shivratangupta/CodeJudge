@@ -11,9 +11,9 @@ import javax.validation.constraints.Size;
 @Getter
 @Setter
 @PasswordMatches
-public class PasswordDto {
+public class ChangePasswordDto {
 
-    private String token;
+    private String oldPassword;
 
     @NotBlank
     @Size(min = 6)

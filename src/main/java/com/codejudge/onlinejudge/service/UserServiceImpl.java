@@ -1,8 +1,10 @@
 package com.codejudge.onlinejudge.service;
 
+import com.codejudge.onlinejudge.dto.ChangePasswordDto;
 import com.codejudge.onlinejudge.dto.PasswordDto;
 import com.codejudge.onlinejudge.dto.UserDto;
 import com.codejudge.onlinejudge.event.SuccessfulRegistrationEvent;
+import com.codejudge.onlinejudge.exception.InvalidOldPasswordException;
 import com.codejudge.onlinejudge.exception.InvalidTokenException;
 import com.codejudge.onlinejudge.exception.UserAlreadyExistException;
 import com.codejudge.onlinejudge.exception.UserNotFoundException;
@@ -18,6 +20,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.WebRequest;
@@ -171,6 +174,19 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return user;
+    }
+
+    @Override
+    public void changeUserPassword(ChangePasswordDto changePasswordDto,
+                                   Authentication authentication) throws InvalidOldPasswordException {
+        User user = userRepository.findByEmail(authentication.getName());
+        if(!user.getPassword().equals(changePasswordDto.getOldPassword())) {
+            throw new InvalidOldPasswordException("Old Password " + changePasswordDto.getOldPassword() + " is invalid");
+        }
+
+        user.setPassword(changePasswordDto.getNewPassword());
+        user.setConfirmPassword(changePasswordDto.getConfirmNewPassword());
+        userRepository.save(user);
     }
 
     private PasswordResetToken validatePasswordResetToken(String token) throws InvalidTokenException {
